@@ -21,36 +21,35 @@ class CalendarApp(App):
         self.background_image = None
         self.today = datetime.today()
         self.wishes = [
-            "Доброго утра!",
+            "Доброе утро!",
             "Сегодня вас ждет потрясающий день, пора идти на встречу преключениям",
-            "Доброго вечера!",
+            "Добрый вечер",
         ]
         # self.wishes = ["Доброго утра!", "Доброго утра!", "Доброго вечера!"]
-        self.background_images = ["images/winter.jpg", "spring.jpg", "summer.jpg", "autumn.jpg"]
+        self.background_images = ["images/winterD.jpg", "spring.jpg", "summer.jpg", "autumn.jpg"]
 
     def build(self):  # Main logic
         root = FloatLayout()
-        self.background_image = Image(source=self.get_background_image(), size_hint=(1, 1), allow_stretch=True)
+        self.background_image = Image(source=self.get_background_image(), size_hint=(1, 1))
 
         self.date_label = Label(
             text=f"{self.today.day} {self.today.strftime('%B')}",
-            color=(111, 111, 111),
+            color=(11, 11, 11),
             font_size="30sp",
-            size_hint=(None, None),
+            halign="center",
+            valign="middle",
             pos=(200, 500),
-            pos_hint={"top": 0.8},
+            pos_hint={"center_y": 0.85, "center_x": 0.5},
         )
         self.wish_label = Label(
             text=self.get_wish(),
-            color=(111, 111, 111),
+            color=(11, 11, 11),
             font_size="20sp",
             size=(400, 200),
             text_size=(400, None),
             halign="center",
             valign="middle",
-            pos_hint={"center_y": 0.65},
-            outline_width=1,
-            outline_color=(255, 255, 255),
+            pos_hint={"center_y": 0.70},
         )
 
         root.add_widget(self.background_image)

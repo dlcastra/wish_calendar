@@ -10,7 +10,7 @@ from kivy.uix.image import Image
 from kivy.uix.label import Label
 
 from wishes import wish_list
-from helpers import to_db, from_db
+from helpers import to_db, from_db, is_database_empty
 import random
 
 # Config
@@ -58,34 +58,24 @@ class CalendarApp(App):
         else:
             return self.get_random_image(3)
 
-    def create_new_record(self):
-        today = datetime.today()
-        wish = self.get_wish()
-        background_image = self.get_background_image()
-        to_db(today, wish, background_image)
+    # def create_new_record(self):
+    #     today = datetime.today()
+    #     wish = self.get_wish()
+    #     background_image = self.get_background_image()
+    #     to_db(today, wish, background_image)
 
     def update_time(self, _dt):  # Updating the date depending on the time of day
         db_data = from_db()
-        date = db_data[1]
-        wish = db_data[2]
-        background_image = db_data[3]
-        if self.today == date:
-            self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
-            self.wish_label.text = wish
-            self.image.source = background_image
+        new_today = datetime.today()
 
-        else:
-            new_today = datetime.today()
-            if new_today.day != self.today.day:
-                self.today = new_today
-                self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
-                self.wish_label.text = self.get_wish()
-                self.image.source = self.get_background_image()
+        if db_data and self.today.day == new_today.day:
+            self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
+            self.wish_label.text = db_data[2]
+            self.image.source = db_data[3]
 
     def build(self):  # Main logic
         root = FloatLayout()
         self.image = Image(source=self.get_background_image(), size_hint=(1, 1))
-
         self.date_label = Label(
             text=f"{self.today.day} {self.today.strftime('%B')}",
             color=(11, 11, 11),
@@ -109,6 +99,7 @@ class CalendarApp(App):
         root.add_widget(self.image)
         root.add_widget(self.date_label)
         root.add_widget(self.wish_label)
+
         to_db(self.today, self.wish_label.text, self.image.source)
 
         Clock.schedule_interval(self.update_time, 10)

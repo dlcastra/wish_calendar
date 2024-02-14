@@ -40,30 +40,29 @@ def from_db():
     return result
 
 
+def is_database_empty():
+    conn = sqlite3.connect("app_data.db")
+    with conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='data'")
+        table_exists = cursor.fetchone()
+        if table_exists:
+            cursor.execute("SELECT COUNT(*) FROM data")
+            row_count = cursor.fetchone()[0]
+            return row_count == 0
+        else:
+            return True
+
+
 if __name__ == "__main__":
-    db_data = from_db()
-    get_day_db = db_data[1].split("-")
-    get_day_db = int(get_day_db[2])
-    now = datetime.now()
-    today = now.date()
-    # print(type(sd[2]))
-    if not db_data or today.day != get_day_db:
-        print(1)
-
-    print(db_data)
-
-
-    # def update_time(self, _dt):  # Updating the date depending on the time of day
-    #     db_data = from_db()
-    #     get_day_db = db_data[1].split("-")
-    #     get_day_db = int(get_day_db[2])
-    #     #
-    #     if not db_data or self.today.day != get_day_db:
-    #         to_db(self.today, self.wish_label.text, self.image.source)
+    # db_data = from_db()
+    # get_day_db = db_data[1].split("-")
+    # get_day_db = int(get_day_db[2])
+    # now = datetime.now()
+    # today = now.date()
+    # # print(type(sd[2]))
+    # if not db_data or today.day != get_day_db:
+    #     print(1)
     #
-    #     wish = db_data[2]
-    #     background_image = db_data[3]
-    #
-    #     self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
-    #     self.wish_label.text = wish
-    #     self.image.source = background_image
+    # print(db_data)
+    print()

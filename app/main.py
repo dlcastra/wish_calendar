@@ -1,3 +1,5 @@
+import os
+import sqlite3
 from datetime import datetime
 
 import kivy
@@ -8,6 +10,10 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 
+from wishes import wish_list
+import random
+
+# Config
 kivy.require("2.3.0")
 Config.set("graphics", "width", "400")
 Config.set("graphics", "height", "600")
@@ -18,19 +24,22 @@ class CalendarApp(App):
         super().__init__()
         self.date_label = None
         self.wish_label = None
-        self.background_image = None
+        self.image = None
         self.today = datetime.today()
-        self.wishes = [
-            "Доброе утро!",
-            "Сегодня вас ждет потрясающий день, пора идти на встречу преключениям",
-            "Добрый вечер",
+        self.wishes = [wish for wish in wish_list]
+        self.paths = [
+            "images/winter/",
+            "images/spring/",
+            "images/summer/",
+            "images/autumn/",
         ]
-        # self.wishes = ["Доброго утра!", "Доброго утра!", "Доброго вечера!"]
-        self.background_images = ["images/winterD.jpg", "spring.jpg", "summer.jpg", "autumn.jpg"]
 
     def build(self):  # Main logic
+        # conn = sqlite3.connect("app_data.db")
+        # c = conn.cursor()
+
         root = FloatLayout()
-        self.background_image = Image(source=self.get_background_image(), size_hint=(1, 1))
+        self.image = Image(source=self.get_background_image(), size_hint=(1, 1))
 
         self.date_label = Label(
             text=f"{self.today.day} {self.today.strftime('%B')}",
@@ -52,7 +61,7 @@ class CalendarApp(App):
             pos_hint={"center_y": 0.70},
         )
 
-        root.add_widget(self.background_image)
+        root.add_widget(self.image)
         root.add_widget(self.date_label)
         root.add_widget(self.wish_label)
 
@@ -68,24 +77,32 @@ class CalendarApp(App):
         else:
             return self.wishes[2]
 
+    def get_random_image(self, index: int):
+        path = self.paths[index]
+        get_images = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
+        choice_image = random.choice(get_images)
+        image = os.path.join(path, choice_image)
+
+        return image
+
     def get_background_image(self):  # Logic of background selection depending on the time of year.
         month = datetime.now().month
         if month in [12, 1, 2]:
-            return self.background_images[0]
+            return self.get_random_image(0)
         elif month in [3, 4, 5]:
-            return self.background_images[1]
+            return self.get_random_image(1)
         elif month in [6, 7, 8]:
-            return self.background_images[2]
+            return self.get_random_image(2)
         else:
-            return self.background_images[3]
+            return self.get_random_image(3)
 
-    def update_time(self, dt):  # Updating the date depending on the time of day
+    def update_time(self, _dt):  # Updating the date depending on the time of day
         new_today = datetime.today()
         if new_today.day != self.today.day:
             self.today = new_today
             self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
             self.wish_label.text = self.get_wish()
-            self.background_image.source = self.get_background_image()
+            self.image.source = self.get_background_image()
 
 
 if __name__ == "__main__":

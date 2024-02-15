@@ -1,33 +1,36 @@
 import os
+import random
+import sqlite3
 from datetime import datetime
 
 import kivy
+from kivy import Config
 from kivy.app import App
-from kivy.clock import Clock
-from kivy.config import Config
+from kivy.lang import Builder
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.image import Image
-from kivy.uix.label import Label
 
-from wishes import wish_list
-from helpers import to_db, from_db, is_database_empty
-import random
+from app.wishes import wish_list
 
-# Config
+# Database setup
+conn = sqlite3.connect("calendar.db")
+c = conn.cursor()
+c.execute(
+    """CREATE TABLE IF NOT EXISTS events
+             (date TEXT PRIMARY KEY, wish TEXT, image TEXT)"""
+)
+conn.commit()
+
+# App setup
 kivy.require("2.3.0")
 Config.set("graphics", "width", "400")
 Config.set("graphics", "height", "600")
 
 
-class CalendarApp(App):
-    def __init__(self):
-        super().__init__()
-        now = datetime.now()
-        self.date_label = None
-        self.wish_label = None
-        self.image = None
-        self.today = now.date()
-        self.wishes = [wish for wish in wish_list]
+class CalendarApp(FloatLayout):
+    def __init__(self, **kwargs):
+        super(CalendarApp, self).__init__(**kwargs)
+        self.today = datetime.today().strftime("%d/%m")
+        self.load_or_create_event()
         self.paths = [
             "images/winter/",
             "images/spring/",
@@ -35,77 +38,61 @@ class CalendarApp(App):
             "images/autumn/",
         ]
 
-    def get_wish(self):  # Logic for creating wishes.
-        wish = random.choice(self.wishes)
-        return wish
+    def load_or_create_event(self):
+        c.execute("SELECT * FROM events WHERE date=?", (self.today,))
+        result = c.fetchone()
+        if result:
+            self.ids.date_label.text = result[0]
+            self.ids.wish_label.text = result[1]
+            image_path = result[2]
+            self.ids.background_image.source = image_path
+        else:
+            self.create_event_and_display()
 
-    def get_random_image(self, index: int):
-        path = self.paths[index]
+    def get_background_image(self):
+        month = datetime.now().month
+        _path = None
+        if month in [12, 1, 2]:
+            _path = "images/winter/"
+        elif month in [3, 4, 5]:
+            _path = "images/spring/"
+        elif month in [6, 7, 8]:
+            _path = "images/summer/"
+        else:
+            _path = "images/autumn/"
+
+        return self.get_random_image(_path)
+
+    @staticmethod
+    def get_random_image(path):
         get_images = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
         choice_image = random.choice(get_images)
         image = os.path.join(path, choice_image)
-
         return image
 
-    def get_background_image(self):  # Logic of background selection depending on the time of year.
-        month = datetime.now().month
-        if month in [12, 1, 2]:
-            return self.get_random_image(0)
-        elif month in [3, 4, 5]:
-            return self.get_random_image(1)
-        elif month in [6, 7, 8]:
-            return self.get_random_image(2)
-        else:
-            return self.get_random_image(3)
-
-    # def create_new_record(self):
-    #     today = datetime.today()
-    #     wish = self.get_wish()
-    #     background_image = self.get_background_image()
-    #     to_db(today, wish, background_image)
-
-    def update_time(self, _dt):  # Updating the date depending on the time of day
-        db_data = from_db()
-        new_today = datetime.today()
-
-        if db_data and self.today.day == new_today.day:
-            self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
-            self.wish_label.text = db_data[2]
-            self.image.source = db_data[3]
-
-    def build(self):  # Main logic
-        root = FloatLayout()
-        self.image = Image(source=self.get_background_image(), size_hint=(1, 1))
-        self.date_label = Label(
-            text=f"{self.today.day} {self.today.strftime('%B')}",
-            color=(11, 11, 11),
-            font_size="30sp",
-            halign="center",
-            valign="middle",
-            pos=(200, 500),
-            pos_hint={"center_y": 0.85, "center_x": 0.5},
+    def create_event_and_display(self):
+        get_wish = [wish for wish in wish_list]
+        wish = random.choice(get_wish)
+        image_path = self.get_background_image()
+        c.execute(
+            """
+            INSERT INTO events (date, wish, image) 
+            VALUES (?, ?, ?)
+        """,
+            (self.today, wish, image_path),
         )
-        self.wish_label = Label(
-            text=self.get_wish(),
-            color=(11, 11, 11),
-            font_size="20sp",
-            size=(400, 200),
-            text_size=(400, None),
-            halign="center",
-            valign="middle",
-            pos_hint={"center_y": 0.70},
-        )
+        conn.commit()
+        self.ids.date_label.text = self.today
+        self.ids.wish_label.text = wish
 
-        root.add_widget(self.image)
-        root.add_widget(self.date_label)
-        root.add_widget(self.wish_label)
 
-        to_db(self.today, self.wish_label.text, self.image.source)
-
-        Clock.schedule_interval(self.update_time, 10)
-        return root
+class CalendarAppMain(App):
+    def build(self):
+        Builder.load_file("calendar.kv")
+        # content = CalendarApp
+        # Clock.schedule_interval(content.load_or_create_event, 10)
+        return CalendarApp()
 
 
 if __name__ == "__main__":
-    app = CalendarApp()
-    app.run()
+    CalendarAppMain().run()

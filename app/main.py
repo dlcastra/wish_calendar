@@ -6,6 +6,7 @@ from datetime import datetime
 import kivy
 from kivy import Config
 from kivy.app import App
+from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.uix.floatlayout import FloatLayout
 
@@ -29,16 +30,11 @@ Config.set("graphics", "height", "600")
 class CalendarApp(FloatLayout):
     def __init__(self, **kwargs):
         super(CalendarApp, self).__init__(**kwargs)
-        self.today = datetime.today().strftime("%d/%m")
-        self.load_or_create_event()
-        self.paths = [
-            "images/winter/",
-            "images/spring/",
-            "images/summer/",
-            "images/autumn/",
-        ]
+        now = datetime.now()
+        self.today = f"{now.day} {now.strftime('%B')}"
+        self.load_or_create_event(0)
 
-    def load_or_create_event(self):
+    def load_or_create_event(self, _dt):
         c.execute("SELECT * FROM events WHERE date=?", (self.today,))
         result = c.fetchone()
         if result:
@@ -84,13 +80,14 @@ class CalendarApp(FloatLayout):
         conn.commit()
         self.ids.date_label.text = self.today
         self.ids.wish_label.text = wish
+        self.ids.background_image.source = image_path
 
 
 class CalendarAppMain(App):
     def build(self):
         Builder.load_file("calendar.kv")
-        # content = CalendarApp
-        # Clock.schedule_interval(content.load_or_create_event, 10)
+        content = CalendarApp()
+        Clock.schedule_interval(content.load_or_create_event, 30)
         return CalendarApp()
 
 

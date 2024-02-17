@@ -1,6 +1,7 @@
 import os
 import random
 import sqlite3
+import sys
 from datetime import datetime
 
 import kivy
@@ -8,9 +9,10 @@ from kivy import Config
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.lang import Builder
+from kivy.resources import resource_add_path
 from kivy.uix.floatlayout import FloatLayout
 
-from app.wishes import wish_list
+from wishes import wish_list
 
 # Database setup
 conn = sqlite3.connect("calendar.db")
@@ -27,6 +29,15 @@ Config.set("graphics", "width", "400")
 Config.set("graphics", "height", "600")
 
 
+def resource_path(relative_path):
+    """ Получает абсолютный путь к ресурсу для PyInstaller """
+    if hasattr(sys, '_MEIPASS'):
+        # Если приложение запущено из исполняемого файла PyInstaller
+        return os.path.join(sys._MEIPASS, relative_path)
+    # Путь для запуска из исходного кода
+    return os.path.join(os.path.abspath("."), relative_path)
+
+
 class CalendarApp(FloatLayout):
     def __init__(self, **kwargs):
         super(CalendarApp, self).__init__(**kwargs)
@@ -40,8 +51,9 @@ class CalendarApp(FloatLayout):
         if result:
             self.ids.date_label.text = result[0]
             self.ids.wish_label.text = result[1]
-            image_path = result[2]
+            image_path = resource_path(result[2])
             self.ids.background_image.source = image_path
+
         else:
             self.create_event_and_display()
 
@@ -49,33 +61,38 @@ class CalendarApp(FloatLayout):
         month = datetime.now().month
         _path = None
         if month in [12, 1, 2]:
-            _path = "images/winter/"
+            _path = resource_path("images/winter/")
         elif month in [3, 4, 5]:
-            _path = "images/spring/"
+            _path = resource_path("images/spring/")
         elif month in [6, 7, 8]:
-            _path = "images/summer/"
+            _path = resource_path("images/summer/")
         else:
-            _path = "images/autumn/"
+            _path = resource_path("images/autumn/")
 
         return self.get_random_image(_path)
 
     @staticmethod
     def get_random_image(path):
-        get_images = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
-        choice_image = random.choice(get_images)
-        image = os.path.join(path, choice_image)
-        return image
+        if os.path.exists(path) and os.listdir(path):
+            get_images = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
+            choice_image = random.choice(get_images)
+            image_path = os.path.join(path, choice_image)
+            return image_path
+        else:
+            print(f"Directory does not exist or is empty: {path}")
+            return None
 
     def create_event_and_display(self):
         get_wish = [wish for wish in wish_list]
         wish = random.choice(get_wish)
         image_path = self.get_background_image()
+        abs_image_path = os.path.abspath(image_path)
         c.execute(
             """
             INSERT INTO events (date, wish, image) 
             VALUES (?, ?, ?)
         """,
-            (self.today, wish, image_path),
+            (self.today, wish, abs_image_path),
         )
         conn.commit()
         self.ids.date_label.text = self.today
@@ -85,11 +102,14 @@ class CalendarApp(FloatLayout):
 
 class CalendarAppMain(App):
     def build(self):
-        Builder.load_file("calendar.kv")
+        kv_file_path = resource_path("calendar.kv")
+        Builder.load_file(kv_file_path)
         content = CalendarApp()
         Clock.schedule_interval(content.load_or_create_event, 30)
-        return CalendarApp()
+        return content
 
 
 if __name__ == "__main__":
+    if hasattr(sys, '_MEIPASS'):
+        resource_add_path(os.path.join(sys._MEIPASS))
     CalendarAppMain().run()

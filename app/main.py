@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import sqlite3
 import sys
 from datetime import datetime
@@ -30,11 +31,8 @@ Config.set("graphics", "height", "600")
 
 
 def resource_path(relative_path):
-    """ Получает абсолютный путь к ресурсу для PyInstaller """
-    if hasattr(sys, '_MEIPASS'):
-        # Если приложение запущено из исполняемого файла PyInstaller
+    if hasattr(sys, "_MEIPASS"):
         return os.path.join(sys._MEIPASS, relative_path)
-    # Путь для запуска из исходного кода
     return os.path.join(os.path.abspath("."), relative_path)
 
 
@@ -85,22 +83,27 @@ class CalendarApp(FloatLayout):
     def create_event_and_display(self):
         get_wish = [wish for wish in wish_list]
         wish = random.choice(get_wish)
+
         image_path = self.get_background_image()
         abs_image_path = os.path.abspath(image_path)
+        pattern = re.compile(r"\bimages.*")
+        short_path = pattern.search(abs_image_path)
+        math_path = short_path.group()
+
         c.execute(
             """
             INSERT INTO events (date, wish, image) 
             VALUES (?, ?, ?)
         """,
-            (self.today, wish, abs_image_path),
+            (self.today, wish, math_path),
         )
         conn.commit()
         self.ids.date_label.text = self.today
         self.ids.wish_label.text = wish
-        self.ids.background_image.source = image_path
+        self.ids.background_image.source = math_path
 
 
-class CalendarAppMain(App):
+class WishCalendar(App):
     def build(self):
         kv_file_path = resource_path("calendar.kv")
         Builder.load_file(kv_file_path)
@@ -110,6 +113,6 @@ class CalendarAppMain(App):
 
 
 if __name__ == "__main__":
-    if hasattr(sys, '_MEIPASS'):
+    if hasattr(sys, "_MEIPASS"):
         resource_add_path(os.path.join(sys._MEIPASS))
-    CalendarAppMain().run()
+    WishCalendar().run()

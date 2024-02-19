@@ -2,14 +2,14 @@
 
 block_cipher = None
 
-a = Analysis(['D:\\PROGRAMMING\\wish_calendar\\app\\main.py'],
+a = Analysis(['<absolute path>'],
              pathex=['D:\\PROGRAMMING\\wish_calendar\\app'],
              binaries=[],
              datas=[
-                 ('D:\\PROGRAMMING\\wish_calendar\\app\\images', 'images'),
-                 ('D:\\PROGRAMMING\\wish_calendar\\app\\icon.ico', '.'),
-                 ('D:\\PROGRAMMING\\wish_calendar\\app\\calendar.kv', '.'),
-                 ('D:\\PROGRAMMING\\wish_calendar\\app\\wishes.py', '.')
+                 ('<absolute path>', 'images'),
+                 ('<absolute path>', '.'),
+                 ('<absolute path>', '.'),
+                 ('<absolute path>', '.')
              ],
              hiddenimports=[],
              hookspath=[],
@@ -35,4 +35,4 @@ exe = EXE(pyz,
           upx=True,
           runtime_tmpdir=None,
           console=False,
-          icon='D:\\PROGRAMMING\\wish_calendar\\app\\icon.ico')
+          icon='<absolute path>')

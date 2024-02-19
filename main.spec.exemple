@@ -3,7 +3,7 @@
 block_cipher = None
 
 a = Analysis(['<absolute path>'],
-             pathex=['D:\\PROGRAMMING\\wish_calendar\\app'],
+             pathex=['<absolute path>'],
              binaries=[],
              datas=[
                  ('<absolute path>', 'images'),

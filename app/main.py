@@ -1,93 +1,118 @@
+import os
+import random
+import re
+import sqlite3
+import sys
 from datetime import datetime
 
 import kivy
+from kivy import Config
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.config import Config
+from kivy.lang import Builder
+from kivy.resources import resource_add_path
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.image import Image
-from kivy.uix.label import Label
 
+from wishes import wish_list
+
+# Database setup
+conn = sqlite3.connect("calendar.db")
+c = conn.cursor()
+c.execute(
+    """CREATE TABLE IF NOT EXISTS events
+             (date TEXT PRIMARY KEY, wish TEXT, image TEXT)"""
+)
+conn.commit()
+
+# App setup
 kivy.require("2.3.0")
 Config.set("graphics", "width", "400")
 Config.set("graphics", "height", "600")
 
 
-class CalendarApp(App):
-    def __init__(self):
-        super().__init__()
-        self.date_label = None
-        self.wish_label = None
-        self.background_image = None
-        self.today = datetime.today()
-        self.wishes = [
-            "Доброе утро!",
-            "Сегодня вас ждет потрясающий день, пора идти на встречу преключениям",
-            "Добрый вечер",
-        ]
-        # self.wishes = ["Доброго утра!", "Доброго утра!", "Доброго вечера!"]
-        self.background_images = ["images/winterD.jpg", "spring.jpg", "summer.jpg", "autumn.jpg"]
+def resource_path(relative_path):
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
-    def build(self):  # Main logic
-        root = FloatLayout()
-        self.background_image = Image(source=self.get_background_image(), size_hint=(1, 1))
 
-        self.date_label = Label(
-            text=f"{self.today.day} {self.today.strftime('%B')}",
-            color=(11, 11, 11),
-            font_size="30sp",
-            halign="center",
-            valign="middle",
-            pos=(200, 500),
-            pos_hint={"center_y": 0.85, "center_x": 0.5},
-        )
-        self.wish_label = Label(
-            text=self.get_wish(),
-            color=(11, 11, 11),
-            font_size="20sp",
-            size=(400, 200),
-            text_size=(400, None),
-            halign="center",
-            valign="middle",
-            pos_hint={"center_y": 0.70},
-        )
+class CalendarApp(FloatLayout):
+    def __init__(self, **kwargs):
+        super(CalendarApp, self).__init__(**kwargs)
+        now = datetime.now()
+        self.today = f"{now.day} {now.strftime('%B')}"
+        self.load_or_create_event(0)
 
-        root.add_widget(self.background_image)
-        root.add_widget(self.date_label)
-        root.add_widget(self.wish_label)
+    def load_or_create_event(self, _dt):
+        c.execute("SELECT * FROM events WHERE date=?", (self.today,))
+        result = c.fetchone()
+        if result:
+            self.ids.date_label.text = result[0]
+            self.ids.wish_label.text = result[1]
+            image_path = resource_path(result[2])
+            self.ids.background_image.source = image_path
 
-        Clock.schedule_interval(self.update_time, 60)
-        return root
-
-    def get_wish(self):  # Logic for creating wishes.
-        hour = datetime.now().hour
-        if hour < 12:
-            return self.wishes[0]
-        elif hour < 18:
-            return self.wishes[1]
         else:
-            return self.wishes[2]
+            self.create_event_and_display()
 
-    def get_background_image(self):  # Logic of background selection depending on the time of year.
+    def get_background_image(self):
         month = datetime.now().month
+        _path = None
         if month in [12, 1, 2]:
-            return self.background_images[0]
+            _path = resource_path("images/winter/")
         elif month in [3, 4, 5]:
-            return self.background_images[1]
+            _path = resource_path("images/spring/")
         elif month in [6, 7, 8]:
-            return self.background_images[2]
+            _path = resource_path("images/summer/")
         else:
-            return self.background_images[3]
+            _path = resource_path("images/autumn/")
 
-    def update_time(self, dt):  # Updating the date depending on the time of day
-        new_today = datetime.today()
-        if new_today.day != self.today.day:
-            self.today = new_today
-            self.date_label.text = f"{self.today.day} {self.today.strftime('%B')}"
-            self.wish_label.text = self.get_wish()
-            self.background_image.source = self.get_background_image()
+        return self.get_random_image(_path)
+
+    @staticmethod
+    def get_random_image(path):
+        if os.path.exists(path) and os.listdir(path):
+            get_images = [file for file in os.listdir(path) if os.path.isfile(os.path.join(path, file))]
+            choice_image = random.choice(get_images)
+            image_path = os.path.join(path, choice_image)
+            return image_path
+        else:
+            print(f"Directory does not exist or is empty: {path}")
+            return None
+
+    def create_event_and_display(self):
+        get_wish = [wish for wish in wish_list]
+        wish = random.choice(get_wish)
+
+        image_path = self.get_background_image()
+        abs_image_path = os.path.abspath(image_path)
+        pattern = re.compile(r"\bimages.*")
+        short_path = pattern.search(abs_image_path)
+        math_path = short_path.group()
+
+        c.execute(
+            """
+            INSERT INTO events (date, wish, image) 
+            VALUES (?, ?, ?)
+        """,
+            (self.today, wish, math_path),
+        )
+        conn.commit()
+        self.ids.date_label.text = self.today
+        self.ids.wish_label.text = wish
+        self.ids.background_image.source = math_path
+
+
+class WishCalendar(App):
+    def build(self):
+        kv_file_path = resource_path("calendar.kv")
+        Builder.load_file(kv_file_path)
+        content = CalendarApp()
+        Clock.schedule_interval(content.load_or_create_event, 30)
+        return content
 
 
 if __name__ == "__main__":
-    app = CalendarApp()
-    app.run()
+    if hasattr(sys, "_MEIPASS"):
+        resource_add_path(os.path.join(sys._MEIPASS))
+    WishCalendar().run()

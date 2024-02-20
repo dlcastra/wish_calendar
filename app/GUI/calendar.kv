@@ -1,4 +1,4 @@
-<CalendarApp>:
+<CalendarContent>:
     orientation: 'vertical'
 
     Image:
@@ -17,9 +17,16 @@
         id: wish_label
         text: ""
         color: (11, 11, 11)
-        font_size: "20sp"
+        font_size: "23sp"
         size: (400, 200)
         text_size: (400, None)
         halign: "center"
         valign: "middle"
         pos_hint: {"center_y": 0.70}
+
+    Spinner:
+        id: options
+        text: "Інші опції"
+        values: ("Нотатки", "Календар", "Фінанси")
+        size_hint: None, None
+        size: (200, 50)

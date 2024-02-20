@@ -12,8 +12,9 @@ from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.resources import resource_add_path
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.screenmanager import Screen, ScreenManager
 
-from wishes import wish_list
+from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db
 
 # Database setup
 conn = sqlite3.connect("calendar.db")
@@ -30,15 +31,25 @@ Config.set("graphics", "width", "400")
 Config.set("graphics", "height", "600")
 
 
-def resource_path(relative_path):
-    if hasattr(sys, "_MEIPASS"):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
+class NotesScreen(Screen):
+    pass
 
 
-class CalendarApp(FloatLayout):
+class FinanceScreen(Screen):
+    pass
+
+
+class MainScreen(Screen):
+    pass
+
+
+class MyScreenManager(ScreenManager):
+    pass
+
+
+class CalendarContent(FloatLayout):
     def __init__(self, **kwargs):
-        super(CalendarApp, self).__init__(**kwargs)
+        super(CalendarContent, self).__init__(**kwargs)
         now = datetime.now()
         self.today = f"{now.day} {now.strftime('%B')}"
         self.load_or_create_event(0)
@@ -81,13 +92,13 @@ class CalendarApp(FloatLayout):
             return None
 
     def create_event_and_display(self):
-        get_wish = [wish for wish in wish_list]
-        wish = random.choice(get_wish)
+        used_wishes = get_wishes_from_db()
+        create_new_wish = generate_wish()
+        wish = save_or_get_other(create_new_wish, used_wishes)
 
         image_path = self.get_background_image()
-        abs_image_path = os.path.abspath(image_path)
         pattern = re.compile(r"\bimages.*")
-        short_path = pattern.search(abs_image_path)
+        short_path = pattern.search(image_path)
         math_path = short_path.group()
 
         c.execute(
@@ -103,13 +114,27 @@ class CalendarApp(FloatLayout):
         self.ids.background_image.source = math_path
 
 
+class Notes(FloatLayout): ...
+
+
+class Finances(FloatLayout): ...
+
+
 class WishCalendar(App):
     def build(self):
-        kv_file_path = resource_path("calendar.kv")
+        # screen_manager = MyScreenManager()
+        # main_screen = MainScreen(name='main')
+        # nodes_screen = FinanceScreen(name='notes')
+
+        kv_file_path = resource_path("GUI/calendar.kv")
         Builder.load_file(kv_file_path)
-        content = CalendarApp()
+        content = CalendarContent()
         Clock.schedule_interval(content.load_or_create_event, 30)
         return content
+
+    def on_spinner_select(self, _spinner, text):
+        if text == "Нотатки":
+            self.root.current = "finance"
 
 
 if __name__ == "__main__":

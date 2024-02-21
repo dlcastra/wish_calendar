@@ -12,9 +12,8 @@ from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.resources import resource_add_path
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.screenmanager import Screen, ScreenManager
 
-from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db
+from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db, add_notes, get_all_notes
 
 # Database setup
 conn = sqlite3.connect("calendar.db")
@@ -23,28 +22,17 @@ c.execute(
     """CREATE TABLE IF NOT EXISTS events
              (date TEXT PRIMARY KEY, wish TEXT, image TEXT)"""
 )
+
+c.execute(
+    """CREATE TABLE IF NOT EXISTS notes
+             (id INTEGER PRIMARY KEY AUTOINCREMENT, note TEXT)"""
+)
 conn.commit()
 
 # App setup
 kivy.require("2.3.0")
 Config.set("graphics", "width", "400")
 Config.set("graphics", "height", "600")
-
-
-class NotesScreen(Screen):
-    pass
-
-
-class FinanceScreen(Screen):
-    pass
-
-
-class MainScreen(Screen):
-    pass
-
-
-class MyScreenManager(ScreenManager):
-    pass
 
 
 class CalendarContent(FloatLayout):
@@ -114,7 +102,28 @@ class CalendarContent(FloatLayout):
         self.ids.background_image.source = math_path
 
 
-class Notes(FloatLayout): ...
+class Notes(FloatLayout):
+    def __init__(self, **kwargs):
+        super(Notes, self).__init__(**kwargs)
+        self.display_all_notes()
+
+    def add_note(self):
+        note_input = self.ids.text_input
+        if len(note_input.text) == 0:
+            pass
+        else:
+            _add_to_db = add_notes(note_input.text)
+            self.update_notes_display()
+
+    def display_all_notes(self):
+        all_notes = get_all_notes()
+        formatted_notes = ""
+        for note in all_notes:
+            formatted_notes += f"Замітка номер: {note[0]}\n{note[1]}\n\n"
+        self.ids.notes_display.text = formatted_notes
+
+    def update_notes_display(self):
+        self.display_all_notes()
 
 
 class Finances(FloatLayout): ...
@@ -122,22 +131,20 @@ class Finances(FloatLayout): ...
 
 class WishCalendar(App):
     def build(self):
-        # screen_manager = MyScreenManager()
-        # main_screen = MainScreen(name='main')
-        # nodes_screen = FinanceScreen(name='notes')
 
-        kv_file_path = resource_path("GUI/calendar.kv")
+        kv_file_path = resource_path("GUI/notes.kv")
         Builder.load_file(kv_file_path)
-        content = CalendarContent()
-        Clock.schedule_interval(content.load_or_create_event, 30)
+        content = Notes()
+        # Clock.schedule_interval(content.load_or_create_event, 30)
         return content
 
     def on_spinner_select(self, _spinner, text):
         if text == "Нотатки":
-            self.root.current = "finance"
+            self.root.current = "notes"
 
 
 if __name__ == "__main__":
     if hasattr(sys, "_MEIPASS"):
         resource_add_path(os.path.join(sys._MEIPASS))
-    WishCalendar().run()
+    wish_calendar = WishCalendar()
+    wish_calendar.run()

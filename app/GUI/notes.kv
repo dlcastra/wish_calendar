@@ -1,9 +1,29 @@
-<Nodes>
-    orientation: 'vertical'
+<Notes>:
+    TextInput:
+        id: notes_display
+        readonly: True
+        multiline: True
+        size_hint: 1, 0.6
+        pos_hint: {"center_x": 0.5, "top": 1}
+
+    TextInput:
+        id: text_input
+        hint_text: 'Нова замітка'
+        size_hint: 1, 0.3
+        pos_hint: {"center_x": 0.5, "top": 0.4}
+
+    Button:
+        text: 'Додати'
+        on_press: root.add_note()
+        size_hint: 0.5, 0.1
+        pos_hint: {"center_x": 0.75, "top": 0.1}
+
     Spinner:
         id: options
         text: "Інші опції"
-        values: ("Нотатки", "Календар", "Фінанси")
-        size_hint: None, None
-        size: (200, 50)
+        values: ("Календар", "Замітки", "Фінанси")
+        size_hint: 0.5, 0.1
+        pos_hint: {"center_x": 0.25, "top": 0.1}
+
+
 

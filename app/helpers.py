@@ -37,3 +37,30 @@ def save_or_get_other(new_wish, wishes_from_db):
         new_wish = generate_wish()
 
     return new_wish
+
+
+def add_notes(note):
+    conn = sqlite3.connect("calendar.db")
+    with conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO notes (note) 
+            VALUES (?)
+            """,
+            (note,),
+        )
+
+
+def get_all_notes():
+    conn = sqlite3.connect("calendar.db")
+    with conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM notes")
+        rows = cursor.fetchall()
+
+    return rows
+
+
+if __name__ == "__main__":
+    print(get_all_notes())

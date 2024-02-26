@@ -126,11 +126,11 @@ class Notes(FloatLayout):
         self.display_all_notes()
 
 
-class Finances(FloatLayout): ...
-
-
 class WishCalendar(App):
     def build(self):
+        # screen_manager = MyScreenManager()
+        # main_screen = MainScreen(name='main')
+        # nodes_screen = NotesScreen(name='notes')
 
         kv_file_path = resource_path("GUI/notes.kv")
         Builder.load_file(kv_file_path)
@@ -141,6 +141,8 @@ class WishCalendar(App):
     def on_spinner_select(self, _spinner, text):
         if text == "Нотатки":
             self.root.current = "notes"
+        else:
+            self.root.current = "main"
 
 
 if __name__ == "__main__":

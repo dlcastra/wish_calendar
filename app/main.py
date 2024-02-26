@@ -12,6 +12,7 @@ from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.resources import resource_add_path
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.screenmanager import ScreenManager, Screen
 
 from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db, add_notes, get_all_notes
 
@@ -126,20 +127,24 @@ class Notes(FloatLayout):
         self.display_all_notes()
 
 
+class MainScreen(Screen):
+    pass
+
+
+class NotesScreen(Screen):
+    pass
+
+
 class WishCalendar(App):
     def build(self):
-        # screen_manager = MyScreenManager()
-        # main_screen = MainScreen(name='main')
-        # nodes_screen = NotesScreen(name='notes')
-
-        kv_file_path = resource_path("GUI/notes.kv")
+        kv_file_path = resource_path("GUI/calendar.kv")
         Builder.load_file(kv_file_path)
-        content = Notes()
-        # Clock.schedule_interval(content.load_or_create_event, 30)
+        content = CalendarContent()
+        Clock.schedule_interval(content.load_or_create_event, 30)
         return content
 
-    def on_spinner_select(self, _spinner, text):
-        if text == "Нотатки":
+    def on_spinner_select(self, spinner, text):
+        if text == "Замітки":  # Check for the selected option
             self.root.current = "notes"
         else:
             self.root.current = "main"

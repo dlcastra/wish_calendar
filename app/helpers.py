@@ -64,3 +64,4 @@ def get_all_notes():
 
 if __name__ == "__main__":
     print(get_all_notes())
+    print(get_wishes_from_db())

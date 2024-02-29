@@ -1,6 +1,5 @@
 import os
 import random
-import re
 import sqlite3
 import sys
 from datetime import datetime
@@ -13,9 +12,10 @@ from kivy.lang import Builder
 from kivy.resources import resource_add_path
 from kivy.uix.floatlayout import FloatLayout
 
-from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db
+from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db, get_short_path, db_is_full
 
 # Database setup
+db_is_full()
 conn = sqlite3.connect("calendar.db")
 c = conn.cursor()
 c.execute(
@@ -51,8 +51,11 @@ class CalendarContent(FloatLayout):
 
     def get_background_image(self):
         month = datetime.now().month
-        _path = None
-        if month in [12, 1, 2]:
+        day = datetime.now().day
+
+        if month == 3 and day == 8:
+            _path = resource_path("images/holidays/march/")
+        elif month in [12, 1, 2]:
             _path = resource_path("images/winter/")
         elif month in [3, 4, 5]:
             _path = resource_path("images/spring/")
@@ -71,30 +74,36 @@ class CalendarContent(FloatLayout):
             image_path = os.path.join(path, choice_image)
             return image_path
         else:
-            print(f"Directory does not exist or is empty: {path}")
             return None
 
     def create_event_and_display(self):
-        used_wishes = get_wishes_from_db()
-        create_new_wish = generate_wish()
-        wish = save_or_get_other(create_new_wish, used_wishes)
+        month = datetime.now().month
+        day = datetime.now().day
 
-        image_path = self.get_background_image()
-        pattern = re.compile(r"\bimages.*")
-        short_path = pattern.search(image_path)
-        math_path = short_path.group()
+        if month == 3 and day == 8:
+            wish = "Сьогодні, кожна жінка стає центром уваги! Нехай у цей прекрасний весняний день тепло і радість наповнюють твоє серце."
+            path = self.get_background_image()
+            short_path = get_short_path(path)
+
+        else:
+            used_wishes = get_wishes_from_db()
+            create_new_wish = generate_wish()
+            wish = save_or_get_other(create_new_wish, used_wishes)
+
+            path = self.get_background_image()
+            short_path = get_short_path(path)
 
         c.execute(
             """
             INSERT INTO events (date, wish, image) 
             VALUES (?, ?, ?)
         """,
-            (self.today, wish, math_path),
+            (self.today, wish, short_path),
         )
         conn.commit()
         self.ids.date_label.text = self.today
         self.ids.wish_label.text = wish
-        self.ids.background_image.source = math_path
+        self.ids.background_image.source = short_path
 
 
 class WishCalendar(App):

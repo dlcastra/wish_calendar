@@ -15,7 +15,6 @@ from kivy.uix.floatlayout import FloatLayout
 from helpers import resource_path, save_or_get_other, generate_wish, get_wishes_from_db, get_short_path, db_is_full
 
 # Database setup
-db_is_full()
 conn = sqlite3.connect("calendar.db")
 c = conn.cursor()
 c.execute(
@@ -24,6 +23,10 @@ c.execute(
 )
 
 conn.commit()
+
+db_size = get_wishes_from_db()
+if len(db_size) > 0:
+    db_is_full()
 
 # App setup
 kivy.require("2.3.0")
@@ -82,16 +85,15 @@ class CalendarContent(FloatLayout):
 
         if month == 3 and day == 8:
             wish = "Сьогодні, кожна жінка стає центром уваги! Нехай у цей прекрасний весняний день тепло і радість наповнюють твоє серце."
-            path = self.get_background_image()
-            short_path = get_short_path(path)
-
+        elif month == 12 and day == 31:
+            wish = "Нехай наступний рік принесе в твоє життя тільки щастя, натхнення і радість!"
         else:
             used_wishes = get_wishes_from_db()
             create_new_wish = generate_wish()
             wish = save_or_get_other(create_new_wish, used_wishes)
 
-            path = self.get_background_image()
-            short_path = get_short_path(path)
+        path = self.get_background_image()
+        short_path = get_short_path(path)
 
         c.execute(
             """
